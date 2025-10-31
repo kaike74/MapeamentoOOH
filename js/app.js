@@ -11,6 +11,23 @@ const CONFIG = {
     }
 };
 
+// Sistema de Debug
+const DEBUG = {
+    enabled: true, // Mude para false em produção
+    log: (...args) => {
+        if (DEBUG.enabled) console.log('[MAPA-OOH]', ...args);
+    },
+    info: (...args) => {
+        if (DEBUG.enabled) console.info('[MAPA-OOH]', ...args);
+    },
+    warn: (...args) => {
+        if (DEBUG.enabled) console.warn('[MAPA-OOH]', ...args);
+    },
+    error: (...args) => {
+        if (DEBUG.enabled) console.error('[MAPA-OOH]', ...args);
+    }
+};
+
 // Estado da aplicação
 const appState = {
     map: null,
@@ -23,6 +40,24 @@ const appState = {
 // Cache simples em memória
 const cache = new Map();
 
+/**
+ * Coleta informações de debug do ambiente
+ */
+function collectDebugInfo() {
+    return {
+        referrer: document.referrer,
+        location: {
+            href: window.location.href,
+            hash: window.location.hash,
+            search: window.location.search,
+            pathname: window.location.pathname
+        },
+        isInIframe: window.self !== window.top,
+        userAgent: navigator.userAgent,
+        timestamp: new Date().toISOString()
+    };
+}
+
 // Inicialização
 document.addEventListener('DOMContentLoaded', () => {
     console.log('🗺️ Iniciando Mapa OOH...');
@@ -33,16 +68,21 @@ document.addEventListener('DOMContentLoaded', () => {
  * Detecta o modo de operação (embed ou direct)
  */
 function detectMode() {
+    const debugInfo = collectDebugInfo();
+    DEBUG.info('🔍 Informações de debug:', debugInfo);
+
     const isInIframe = window.self !== window.top;
     const urlParams = new URLSearchParams(window.location.search);
     const tableId = urlParams.get('id') || urlParams.get('table');
 
     if (isInIframe) {
         console.log('📍 Modo: EMBED (dentro do Notion)');
+        DEBUG.info('🔗 Embed detectado - Referrer:', debugInfo.referrer);
         appState.mode = 'embed';
         handleEmbedMode();
     } else if (tableId) {
         console.log('📍 Modo: DIRECT com ID');
+        DEBUG.info('🆔 Table ID fornecido:', tableId);
         appState.mode = 'direct';
         appState.currentTableId = tableId;
         handleDirectModeWithId(tableId);
@@ -54,29 +94,125 @@ function detectMode() {
 }
 
 /**
+ * Tenta obter o page ID via PostMessage (para comunicação cross-origin)
+ */
+async function tryPostMessage() {
+    return new Promise((resolve) => {
+        const timeout = setTimeout(() => {
+            DEBUG.warn('⏱️ Timeout: PostMessage não respondeu em 2s');
+            resolve(null);
+        }, 2000);
+
+        window.addEventListener('message', function handler(event) {
+            DEBUG.log('📬 Mensagem recebida:', event.origin, event.data);
+
+            if (event.origin.includes('notion.so') && event.data.pageId) {
+                clearTimeout(timeout);
+                window.removeEventListener('message', handler);
+                DEBUG.log('✅ Page ID recebido via PostMessage:', event.data.pageId);
+                resolve(event.data.pageId);
+            }
+        });
+
+        // Solicitar ID via PostMessage
+        if (window.parent !== window) {
+            DEBUG.log('📤 Solicitando page ID via PostMessage ao parent...');
+            window.parent.postMessage({ type: 'request-page-id' }, '*');
+        } else {
+            DEBUG.warn('⚠️ Não está em iframe, não é possível solicitar via PostMessage');
+            clearTimeout(timeout);
+            resolve(null);
+        }
+    });
+}
+
+/**
  * Manipula modo embed (dentro do Notion)
  */
 async function handleEmbedMode() {
     try {
+        let pageId = null;
+
+        // TENTATIVA 1: Referrer completo
         const referrer = document.referrer;
         console.log('🔗 Referrer:', referrer);
+        DEBUG.info('🔗 Referrer completo:', referrer);
 
-        if (!referrer || !referrer.includes('notion')) {
-            throw new Error('Não foi possível detectar a página do Notion. Certifique-se de que está embutido corretamente.');
+        if (referrer && referrer.includes('notion')) {
+            pageId = extractNotionPageId(referrer);
+            if (pageId) {
+                DEBUG.log('✅ ID extraído do referrer:', pageId);
+                console.log('✅ ID extraído do referrer:', pageId);
+            }
         }
 
-        const pageId = extractNotionPageId(referrer);
+        // TENTATIVA 2: Window location (se disponível)
         if (!pageId) {
-            throw new Error('ID da página do Notion não encontrado no referrer.');
+            DEBUG.info('🔄 Tentativa 2: Acessando parent window...');
+            try {
+                const parentUrl = window.parent.location.href;
+                DEBUG.log('🔗 Parent URL:', parentUrl);
+                pageId = extractNotionPageId(parentUrl);
+                if (pageId) {
+                    DEBUG.log('✅ ID extraído do parent:', pageId);
+                    console.log('✅ ID extraído do parent:', pageId);
+                }
+            } catch (e) {
+                DEBUG.warn('⚠️ Não foi possível acessar parent window (normal em cross-origin):', e.message);
+            }
         }
 
-        console.log('📄 Page ID extraído:', pageId);
-        appState.currentPageId = pageId;
+        // TENTATIVA 3: PostMessage listener
+        if (!pageId) {
+            DEBUG.info('🔄 Tentativa 3: PostMessage...');
+            console.log('🔄 Tentando PostMessage...');
+            pageId = await tryPostMessage();
+            if (pageId) {
+                DEBUG.log('✅ ID recebido via PostMessage:', pageId);
+                console.log('✅ ID recebido via PostMessage:', pageId);
+            }
+        }
 
-        // Buscar dados da tabela
+        // TENTATIVA 4: URL fragments/hash
+        if (!pageId) {
+            DEBUG.info('🔄 Tentativa 4: Hash e Search params...');
+            const hash = window.location.hash;
+            const search = window.location.search;
+            DEBUG.log('🔗 Hash:', hash, 'Search:', search);
+            console.log('🔗 Hash:', hash, 'Search:', search);
+
+            pageId = extractNotionPageId(hash + search);
+            if (pageId) {
+                DEBUG.log('✅ ID extraído de hash/search:', pageId);
+                console.log('✅ ID extraído de hash/search:', pageId);
+            }
+        }
+
+        if (!pageId) {
+            const debugInfo = collectDebugInfo();
+            throw new Error(`
+❌ Não foi possível detectar o ID da página do Notion.
+
+📋 Informações de debug:
+• Referrer: ${debugInfo.referrer}
+• Hash: ${debugInfo.location.hash}
+• Search: ${debugInfo.location.search}
+• No iframe: ${debugInfo.isInIframe ? 'Sim' : 'Não'}
+
+💡 Soluções:
+1. Use o modo direto com ID manual
+2. Certifique-se de que o embed tem permissões corretas
+3. Tente recarregar a página do Notion
+            `);
+        }
+
+        console.log('📄 Page ID final:', pageId);
+        DEBUG.info('📄 Page ID final formatado:', pageId);
+        appState.currentPageId = pageId;
         await loadMapData(pageId);
 
     } catch (error) {
+        DEBUG.error('❌ Erro no modo embed:', error);
         console.error('❌ Erro no modo embed:', error);
         showError(error.message);
     }
@@ -99,23 +235,34 @@ async function handleDirectModeWithId(tableId) {
  * Extrai o ID da página do Notion do URL
  */
 function extractNotionPageId(url) {
-    // Formatos possíveis:
-    // https://www.notion.so/workspace/Page-Name-18b20b549cf580ed9111df87746d4cb8
-    // https://notion.so/18b20b549cf580ed9111df87746d4cb8
+    DEBUG.log('[DEBUG] Tentando extrair ID da URL:', url);
 
+    // Padrões mais flexíveis para diferentes formatos
     const patterns = [
+        // URL completa com nome da página
         /notion\.so\/[^\/]*\/[^-]+-([a-f0-9]{32})/i,
+        // URL direta com ID
         /notion\.so\/([a-f0-9]{32})/i,
-        /notion\.so\/[^\/]*-([a-f0-9]{32})/i
+        // URL com workspace
+        /notion\.so\/[^\/]*-([a-f0-9]{32})/i,
+        // Fragment/hash
+        /#([a-f0-9]{32})/i,
+        // Query parameter
+        /[?&]id=([a-f0-9]{32})/i,
+        // Qualquer sequência de 32 caracteres hex
+        /([a-f0-9]{32})/i
     ];
 
-    for (const pattern of patterns) {
+    for (let i = 0; i < patterns.length; i++) {
+        const pattern = patterns[i];
         const match = url.match(pattern);
         if (match) {
+            DEBUG.log(`[DEBUG] ✅ ID encontrado com padrão ${i + 1}: ${match[1]}`);
             return formatNotionId(match[1]);
         }
     }
 
+    DEBUG.warn('[DEBUG] ❌ Nenhum ID encontrado nos padrões');
     return null;
 }
 
@@ -476,12 +623,44 @@ function showLoading(show) {
  * Mostra mensagem de erro
  */
 function showError(message) {
-    document.getElementById('error-text').textContent = message;
+    DEBUG.error('🚨 Exibindo erro ao usuário:', message);
+
+    // Se for erro de embed, mostrar informações específicas
+    if (appState.mode === 'embed' && message.includes('ID da página')) {
+        const debugInfo = collectDebugInfo();
+
+        const enhancedMessage = `
+${message}
+
+🔧 Informações técnicas:
+• Referrer: ${debugInfo.referrer || 'Não disponível'}
+• URL atual: ${debugInfo.location.href}
+• No iframe: ${debugInfo.isInIframe ? 'Sim' : 'Não'}
+• Timestamp: ${debugInfo.timestamp}
+
+💡 Possíveis soluções:
+1. Recarregue a página do Notion
+2. Tente usar o modo direto (botão abaixo)
+3. Verifique se o embed tem as permissões necessárias
+4. Consulte o console do navegador (F12) para mais detalhes
+        `;
+
+        document.getElementById('error-text').innerHTML = enhancedMessage.replace(/\n/g, '<br>');
+    } else {
+        document.getElementById('error-text').textContent = message;
+    }
+
     document.getElementById('error-message').classList.remove('hidden');
     showLoading(false);
 
     // Event listener para retry
-    document.getElementById('retry-button').addEventListener('click', () => {
+    const retryButton = document.getElementById('retry-button');
+    // Remove listeners antigos para evitar duplicação
+    const newRetryButton = retryButton.cloneNode(true);
+    retryButton.parentNode.replaceChild(newRetryButton, retryButton);
+
+    newRetryButton.addEventListener('click', () => {
+        DEBUG.info('🔄 Usuário solicitou retry...');
         document.getElementById('error-message').classList.add('hidden');
         window.location.reload();
     });
