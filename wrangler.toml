@@ -1,0 +1,38 @@
+name = "mapeamento-ooh"
+main = "workers/notion-api.js"
+compatibility_date = "2024-01-01"
+account_id = "" # Adicionar após configuração
+
+# Workers Routes
+routes = [
+    { pattern = "*/api/*", zone_name = "" } # Adicionar domínio após configuração
+]
+
+# Variáveis de ambiente
+[env.production]
+vars = { ENVIRONMENT = "production" }
+
+[env.production.vars]
+# NOTION_TOKEN deve ser configurado como secret:
+# wrangler secret put NOTION_TOKEN
+
+# Para desenvolvimento local
+[env.development]
+vars = { ENVIRONMENT = "development" }
+
+# Configuração de build
+[build]
+command = ""
+
+# Limites e configurações
+[limits]
+cpu_ms = 50
+
+# KV Namespaces (opcional, para cache persistente)
+# [[kv_namespaces]]
+# binding = "CACHE"
+# id = "" # Criar KV namespace e adicionar ID
+
+# Cloudflare Pages integration
+# O frontend (public/) deve ser deployado via Cloudflare Pages
+# Este worker será usado como Function para rotas /api/*
