@@ -21,11 +21,17 @@
 3. Clique em **Begin setup**
 
 #### Passo 3: Configurar Build
+
+⚠️ **IMPORTANTE**: Use exatamente estas configurações:
+
 - **Project name**: `mapeamento-ooh` (ou nome de sua escolha)
-- **Production branch**: `main` ou `claude/notion-ooh-map-embed-*`
+- **Production branch**: `main` (ou sua branch principal)
 - **Framework preset**: `None`
-- **Build command**: *(deixar vazio)*
+- **Build command**: **(DEIXAR COMPLETAMENTE VAZIO - não digitar nada)**
 - **Build output directory**: `public`
+- **Root directory**: `/` (padrão)
+
+**NÃO** adicione nenhum comando de build! O Cloudflare Pages serve os arquivos diretamente.
 
 Clique em **Save and Deploy**
 

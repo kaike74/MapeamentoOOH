@@ -4,9 +4,6 @@
   "description": "Sistema de mapeamento OOH integrado com Notion",
   "main": "workers/notion-api.js",
   "scripts": {
-    "dev": "wrangler dev",
-    "deploy": "wrangler deploy",
-    "deploy:production": "wrangler deploy --env production",
     "pages:dev": "wrangler pages dev public",
     "pages:deploy": "wrangler pages deploy public"
   },
