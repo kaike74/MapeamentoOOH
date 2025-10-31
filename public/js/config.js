@@ -4,15 +4,15 @@
 
 export const CONFIG = {
     // API Endpoints
+    // IMPORTANTE: Sistema usa RECORD ID (ID do registro) não database ID
     api: {
         endpoint: '/api',
-        mapData: '/api/map-data',
-        tableData: '/api/table-data',
-        layerList: '/api/layer-list',
-        layerUpload: '/api/layer-upload',
-        layerManage: '/api/layer-manage',
-        kmlData: '/api/kml-data',
-        geocode: '/api/geocode'
+        mapData: '/api/map-data',          // GET ?recordId=XXX (mudou de pageId)
+        layerList: '/api/layer-list',      // GET ?projectId=XXX
+        layerUpload: '/api/layer-upload',  // POST
+        layerManage: '/api/layer-manage',  // POST
+        kmlData: '/api/kml-data',          // GET ?layerId=XXX&projectId=XXX
+        geocode: '/api/geocode'            // POST (futuro)
     },
 
     // Configurações do mapa

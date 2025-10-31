@@ -121,14 +121,15 @@ function formatNotionId(id) {
 
 /**
  * Busca nome do projeto via API
+ * MUDANÇA: Agora usa recordId ao invés de pageId
  */
-async function fetchProjectName(projectId) {
+async function fetchProjectName(recordId) {
     try {
-        // Tenta via API
-        const response = await fetch(`${CONFIG.api.mapData}?pageId=${projectId}`);
+        // Tenta via API - agora com recordId
+        const response = await fetch(`${CONFIG.api.mapData}?recordId=${recordId}`);
         if (response.ok) {
             const data = await response.json();
-            return data.pageName || 'Projeto OOH';
+            return data.projectName || 'Projeto OOH';
         }
     } catch (error) {
         debugError('Erro ao buscar nome do projeto:', error);
