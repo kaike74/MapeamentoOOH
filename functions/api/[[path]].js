@@ -1,11 +1,7 @@
 /**
- * Cloudflare Pages Function
- * Este arquivo serve como função serverless para rotas /api/*
- * É uma alternativa ao Worker standalone, integrado com Cloudflare Pages
+ * Cloudflare Pages Function para API
+ * Captura apenas rotas /api/*
  */
-
-// Importa a lógica do worker
-// Como estamos usando Pages Functions, vamos replicar a lógica aqui
 
 const NOTION_API_VERSION = '2022-06-28';
 const NOTION_API_BASE = 'https://api.notion.com/v1';
@@ -31,14 +27,20 @@ export async function onRequest(context) {
         const path = url.pathname;
 
         // Rotas API
-        if (path.startsWith('/api/map-data')) {
+        if (path.includes('map-data')) {
             return await handleMapDataRequest(url, env, corsHeaders);
-        } else if (path.startsWith('/api/table-data')) {
+        } else if (path.includes('table-data')) {
             return await handleTableDataRequest(url, env, corsHeaders);
         }
 
-        // Se não for rota de API, deixa o Pages servir o arquivo estático
-        return context.next();
+        // Fallback - nenhuma rota conhecida
+        return new Response(JSON.stringify({
+            error: 'Rota não encontrada',
+            available: ['/api/map-data', '/api/table-data']
+        }), {
+            status: 404,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
 
     } catch (error) {
         console.error('Function error:', error);
