@@ -1,0 +1,5 @@
+# Redirects para Cloudflare Pages
+# As Functions em /functions/ são automaticamente mapeadas
+
+# Garantir que rotas API sejam tratadas pelas Functions
+/api/*  200
