@@ -2,7 +2,7 @@
 # Este projeto usa Cloudflare Pages Functions (não Workers standalone)
 # O frontend em public/ é servido diretamente
 # As functions em functions/api/ são executadas automaticamente
-
+name = "mapeamento-ooh"
 # Build output directory
 pages_build_output_dir = "public"
 
