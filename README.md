@@ -1,29 +1,57 @@
-# 🗺️ Mapeamento OOH
+# 🗺️ Mapeamento OOH - Sistema Completo de Camadas Interativas
 
-Sistema de mapeamento interativo de pontos OOH (Out-of-Home) integrado com Notion, desenvolvido para substituir o Google My Maps com detecção automática de tabelas.
+Sistema profissional de mapeamento interativo de campanhas OOH (Out-of-Home) com **camadas dinâmicas**, upload inteligente de dados, geocodificação automática e integração completa com Notion + Google Drive.
 
 ## ✨ Funcionalidades
 
-### Modo Dual de Operação
+### 🎯 Sistema de Camadas Dinâmicas (NOVO)
 
-- **Embed Mode**: Detecta automaticamente quando está embutido no Notion e carrega os dados da página
-- **Direct Mode**: Permite acesso direto via URL com ID da tabela ou interface para gerar links
+- **Múltiplas Camadas**: Organize diferentes datasets em camadas independentes
+- **Upload Inteligente**: Excel, CSV ou KML com mapeamento automático de colunas
+- **Geocodificação**: Conversão automática de endereços em coordenadas (OpenStreetMap)
+- **Gerenciamento Visual**: Toggle show/hide, controle de opacidade, renomear, alterar cores
+- **Soft Delete**: Camadas excluídas ficam apenas ocultas (`_EXCLUIDO_`)
+- **Ícones Customizados**: 7 opções de ícones (📍🏪🏢🚩⭐🎯📺)
+- **Armazenamento no Drive**: Cada projeto tem sua pasta com KMLs organizados
 
-### Integração com Notion
+### 🎨 Modo Dual de Operação
 
-- Detecção automática de tabelas OOH em páginas do Notion
+- **Embed Mode**:
+  - Interface simplificada para Notion
+  - Controle de camadas com checkboxes
+  - Apenas visualização
+
+- **Direct Mode**:
+  - Interface completa com ferramentas de edição
+  - Upload de novas camadas
+  - Gerenciamento de cores, ícones e propriedades
+  - Exportação de dados
+
+### 🔗 Integração com Notion
+
+- Detecção de tabelas OOH via ID na URL
 - Sincronização em tempo real com dados do Notion
 - Suporte a múltiplos campos: Endereço, Exibidora, Produto, UF, Praça
 - Exibição de imagens de capa dos registros
-- Sistema de cache para performance otimizada
+- Sistema de cache multinível para performance
 
-### Mapa Interativo
+### 📤 Upload Inteligente de Dados
 
-- Biblioteca Leaflet para visualização interativa
-- Marcadores personalizados
+- **Formatos**: Excel (.xlsx, .xls), CSV (.csv), KML (.kml)
+- **Auto-detecção**: Sistema identifica automaticamente colunas (endereço, cidade, UF, lat/lng)
+- **Assistente Visual**: Interface guiada para mapear campos desconhecidos
+- **Geocodificação Automática**: Converte endereços em coordenadas
+- **Preview**: Visualize dados antes de confirmar upload
+- **Validações**: Limites de tamanho (10MB) e quantidade (5000 linhas)
+
+### 🗺️ Mapa Interativo
+
+- Biblioteca Leaflet para visualização profissional
+- Marcadores customizados por camada
 - Tooltips com informações completas e imagens
 - Zoom automático para incluir todos os pontos
 - Design responsivo para desktop, tablet e mobile
+- Performance otimizada (lazy loading, clustering planejado)
 
 ## 🏗️ Estrutura do Projeto
 

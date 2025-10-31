@@ -37,15 +37,17 @@ function detectMode() {
     const urlParams = new URLSearchParams(window.location.search);
     const tableId = urlParams.get('id') || urlParams.get('table');
 
-    if (isInIframe) {
-        console.log('📍 Modo: EMBED (dentro do Notion)');
-        appState.mode = 'embed';
-        handleEmbedMode();
-    } else if (tableId) {
-        console.log('📍 Modo: DIRECT com ID');
-        appState.mode = 'direct';
+    // Se há ID na URL, usa ele independentemente de estar em iframe ou não
+    if (tableId) {
+        console.log('📍 Modo: DIRECT com ID' + (isInIframe ? ' (em iframe)' : ''));
+        appState.mode = isInIframe ? 'embed' : 'direct';
         appState.currentTableId = tableId;
         handleDirectModeWithId(tableId);
+    } else if (isInIframe) {
+        // Está em iframe mas não tem ID na URL - tenta detectar automaticamente
+        console.log('📍 Modo: EMBED (dentro do Notion) - tentando detectar ID...');
+        appState.mode = 'embed';
+        handleEmbedMode();
     } else {
         console.log('📍 Modo: DIRECT sem ID');
         appState.mode = 'direct';
@@ -62,12 +64,36 @@ async function handleEmbedMode() {
         console.log('🔗 Referrer:', referrer);
 
         if (!referrer || !referrer.includes('notion')) {
-            throw new Error('Não foi possível detectar a página do Notion. Certifique-se de que está embutido corretamente.');
+            throw new Error(`
+❌ Não foi possível detectar o ID da página do Notion automaticamente.
+
+📋 Como resolver:
+1. Adicione o ID da sua tabela OOH na URL do embed
+2. Formato: ${window.location.origin}?id=SEU_ID_AQUI
+3. Exemplo: ${window.location.origin}?id=18b20b549cf580ed9111df87746d4cb8
+
+💡 Como obter o ID:
+1. Abra sua tabela OOH no Notion
+2. Clique em "⋮⋮" > "Copy link"
+3. O ID é a parte após o último "-" na URL
+            `.trim());
         }
 
         const pageId = extractNotionPageId(referrer);
         if (!pageId) {
-            throw new Error('ID da página do Notion não encontrado no referrer.');
+            throw new Error(`
+❌ Não foi possível detectar o ID da página do Notion automaticamente.
+
+📋 Como resolver:
+1. Adicione o ID da sua tabela OOH na URL do embed
+2. Formato: ${window.location.origin}?id=SEU_ID_AQUI
+3. Exemplo: ${window.location.origin}?id=18b20b549cf580ed9111df87746d4cb8
+
+💡 Como obter o ID:
+1. Abra sua tabela OOH no Notion
+2. Clique em "⋮⋮" > "Copy link"
+3. O ID é a parte após o último "-" na URL
+            `.trim());
         }
 
         console.log('📄 Page ID extraído:', pageId);
